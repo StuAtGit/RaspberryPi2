@@ -5,4 +5,4 @@ MQTT broker should be using TLS & username/password auth.
 
 See:
 https://github.com/StuAtGit/hivemq
-For and example setup of a broker it is expected to interact with.
+for an example setup of a broker it is expected to interact with.
