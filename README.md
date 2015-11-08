@@ -1,8 +1,8 @@
 ## GPIO Daemon for the Raspberry PI 2
 
-Currently, all this really does is demonstrate the use of the pi4j library to turn a
-GPIO pin on the Raspberry PI 2 on and off.
-(The python library I tried only worked with the PI 1)
+Daemon that will listen to an MQTT broker, and set the GPIO pins on a Raspberry PI accordingly.
+MQTT broker should be using TLS & username/password auth.
 
-Eventually, I would like to this to subscribe to an MQTT server I have in the cloud,
-and turn pins on and off via commands sent over the appropriate topic.
+See:
+https://github.com/StuAtGit/hivemq
+For and example setup of a broker it is expected to interact with.
