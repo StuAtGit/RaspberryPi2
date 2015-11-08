@@ -1,4 +1,4 @@
-== GPIO Daemon for the Raspberry PI 2
+## GPIO Daemon for the Raspberry PI 2
 
 Currently, all this really does is demonstrate the use of the pi4j library to turn a
 GPIO pin on the Raspberry PI 2 on and off.

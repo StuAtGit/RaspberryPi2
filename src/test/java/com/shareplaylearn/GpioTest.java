@@ -5,9 +5,9 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 /**
- * Unit test for simple RaspberryPi2Gpio.
+ * Unit test for simple Gpio.
  */
-public class RaspberryPi2GpioTest
+public class GpioTest
     extends TestCase
 {
     /**
@@ -15,7 +15,7 @@ public class RaspberryPi2GpioTest
      *
      * @param testName name of the test case
      */
-    public RaspberryPi2GpioTest(String testName)
+    public GpioTest(String testName)
     {
         super( testName );
     }
@@ -25,7 +25,7 @@ public class RaspberryPi2GpioTest
      */
     public static Test suite()
     {
-        return new TestSuite( RaspberryPi2GpioTest.class );
+        return new TestSuite( GpioTest.class );
     }
 
     /**
