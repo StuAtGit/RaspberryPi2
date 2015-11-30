@@ -48,6 +48,13 @@ public class Gpio
         }
     }
 
+    public void setLow( GpioPinDigitalOutput pin ) {
+        log.debug("Setting pin: " + pin.toString() + " to low state.");
+        if( !this.mock ) {
+            pin.setState(PinState.LOW);
+        }
+    }
+
     public void shutdown() {
         log.info("Shutting down gpio.");
         if( !this.mock ) {

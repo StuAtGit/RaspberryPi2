@@ -5,6 +5,12 @@ import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import static java.nio.charset.StandardCharsets.*;
 
 /**
@@ -26,6 +32,23 @@ public class GpioDaemon
     private String username;
     private char[] password;
 
+    public static void main( String[] args ) throws MqttException {
+        //TODO: command line arguments & test
+        ArrayList<String> brokers = new ArrayList<String>();
+        String[] brokerList = brokers.toArray(new String[brokers.size()]);
+        String clientName = "Default Gpio Daemon";
+        String username = "";
+        char[] password = "".toCharArray();
+        String topic = "gpio_daemon";
+        int maxInvalid = 50;
+        boolean mockGpio = true;
+        int pollRate = 100;
+        Thread gpioThread = new Thread ( new GpioDaemon( brokerList, clientName, username,
+                password, topic, maxInvalid, mockGpio ) );
+        ScheduledExecutorService gpioExecutor = Executors.newSingleThreadScheduledExecutor();
+        gpioExecutor.schedule(gpioThread, pollRate, TimeUnit.MILLISECONDS);
+    }
+
     public GpioDaemon( String[] brokerList, String clientName, String username,
                        char[] password, String topic, int maxInvalid, boolean mockGpio ) throws MqttException {
         this.gpio = new Gpio( mockGpio );
@@ -37,11 +60,18 @@ public class GpioDaemon
             throw new IllegalArgumentException("Invalid client name: " + clientName);
         }
         this.mqttClient = new MqttClient( brokerList[0], clientName, new MemoryPersistence() );
-        MqttConnectOptions connectOptions = new MqttConnectOptions();
         this.brokerList = brokerList;
         this.topic = topic;
         this.username = username;
         this.password = password;
+        this.invalidRepeatCounter = 0;
+        this.maxInvalid = maxInvalid;
+        this.connectToBroker();
+        this.isRunning = true;
+    }
+
+    public void connectToBroker() throws MqttException {
+        MqttConnectOptions connectOptions = new MqttConnectOptions();
         connectOptions.setServerURIs(this.brokerList);
         connectOptions.setCleanSession(true);
         connectOptions.setUserName(this.username);
@@ -51,13 +81,16 @@ public class GpioDaemon
         this.mqttClient.setCallback(this);
         this.mqttClient.subscribe(this.topic,1);
         this.log.info("Subscribed to topic: " + this.topic);
-        this.invalidRepeatCounter = 0;
-        this.isRunning = true;
+    }
+
+    public void disconnect() throws MqttException {
+        this.mqttClient.unsubscribe(this.topic);
+        this.mqttClient.disconnect();
     }
 
     public void run() {
-        while( this.mqttClient.isConnected() && this.isRunning ) {
-
+        while( this.isRunning ) {
+            //Just wait for messages to trigger callbacks..
         }
         try {
             this.mqttClient.disconnect();
@@ -65,10 +98,6 @@ public class GpioDaemon
             this.log.error("Error disconnecting: " + e.getMessage());
             this.log.error(Exceptions.traceToString(e));
         }
-    }
-
-    public static void main( String[] args ) {
-
     }
 
     public void connectionLost(Throwable throwable) {
@@ -85,6 +114,9 @@ public class GpioDaemon
             this.log.info("Invalid command send to client: " + message + " sending: " + result.response );
             this.mqttClient.publish(topic, result.response.getBytes(UTF_8), 1, false);
             this.invalidRepeatCounter++;
+            if( this.invalidRepeatCounter > this.maxInvalid ) {
+                this.reconnect(1000);
+            }
             return;
         } else if( result.type == CommandTranslator.ResultType.PIN ) {
             if( result.setPinHigh ) {
@@ -94,12 +126,42 @@ public class GpioDaemon
                 this.invalidRepeatCounter = 0;
                 return;
             } else {
-                //set low.. need this in gpio.
+                this.gpio.setLow(result.pin);
                 this.invalidRepeatCounter = 0;
-                //return;
+                return;
             }
-        } //Reconnect, Shutdown, etc (Restart would be kind of cool, but we'll see)
+        } else if( result.type == CommandTranslator.ResultType.DAEMON_COMMAND ) {
+            //Reconnect, Shutdown, etc (Restart would be kind of cool, but we'll see)
+            if( result.reconnect ) {
+                this.reconnect(result.millisecondsBeforeReconnect);
+                this.invalidRepeatCounter = 0;
+            }
+        }
         this.mqttClient.publish(topic, "Unknown issue processing command".getBytes(UTF_8), 1, false);
+    }
+
+    public void reconnect( long sleepTime ) {
+        try {
+            this.disconnect();
+        } catch( MqttException e ) {
+            this.log.error( "Error disconnecting MQTT client: " + e.getMessage());
+            this.log.error( Exceptions.traceToString(e) );
+        }
+        try {
+            Thread.sleep(sleepTime);
+        } catch( InterruptedException e ) {
+            this.log.error("Interrupted while sleeping prior to reconnect: " + e.getMessage());
+            this.log.error( Exceptions.traceToString(e));
+            Thread.currentThread().interrupt();
+        }
+        try {
+            this.connectToBroker();
+        } catch( MqttException e ) {
+            this.log.error("Error reconnecting to mqtt broker: " + e.getMessage() );
+            this.log.error( Exceptions.traceToString(e) );
+            this.log.error("Shutting down Gpio Daemon");
+            this.isRunning = false;
+        }
     }
 
     public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {
