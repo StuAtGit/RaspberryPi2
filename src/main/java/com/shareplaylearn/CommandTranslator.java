@@ -10,6 +10,8 @@ import com.pi4j.io.gpio.RaspiPin;
  * Or "LIGHT_SWITCH_1_OFF -> PIN_12 -> LOW.
  * etc.
  *
+ * Actually, this should be an externally configurable thing (the mapping of higher-level commands). Yeah. Obvious. :D.
+ *
  * Yeah, this could become an interface with different implementations, but one thing at a time..
  */
 public class CommandTranslator {
@@ -40,7 +42,7 @@ public class CommandTranslator {
         }
         public ResultType type;
         public String response;
-        public GpioPinDigitalOutput pin;
+        public GpioPinDigitalOutput pin;   
         public boolean setPinHigh;
         public boolean reconnect;
         public int millisecondsBeforeReconnect;

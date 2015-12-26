@@ -6,10 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 import static java.nio.charset.StandardCharsets.*;
 
@@ -43,10 +40,41 @@ public class GpioDaemon
         int maxInvalid = 50;
         boolean mockGpio = true;
         int pollRate = 100;
-        Thread gpioThread = new Thread ( new GpioDaemon( brokerList, clientName, username,
-                password, topic, maxInvalid, mockGpio ) );
-        ScheduledExecutorService gpioExecutor = Executors.newSingleThreadScheduledExecutor();
-        gpioExecutor.schedule(gpioThread, pollRate, TimeUnit.MILLISECONDS);
+        ScheduledExecutorService gpioExecutor = null;
+        while( true ) {
+            try {
+
+                //schedule the gpio listener to run periodically
+                Thread gpioThread = new Thread(new GpioDaemon(brokerList, clientName, username,
+                        password, topic, maxInvalid, mockGpio));
+                gpioExecutor = Executors.newSingleThreadScheduledExecutor();
+                gpioExecutor.scheduleAtFixedRate(gpioThread, 0, pollRate, TimeUnit.MILLISECONDS);
+
+                //start a sleeping thread we can block on
+                Thread blockingThread = new Thread(new Runnable() {
+                    public void run() {
+                        try {
+                            while( true ) {
+                                Thread.sleep(60 * 60 * 1000);
+                                log.info("Gpio Blocking thread still running.");
+                            }
+                        } catch (InterruptedException e) {
+                            log.warn("Blocking thread was interrupted: " + e.getMessage());
+                        }
+                    }
+                });
+                blockingThread.start();
+                blockingThread.join();
+
+            } catch( InterruptedException e ) {
+                log.error("Execution of gpio daemon was interrupted: " + e.getMessage());
+                log.error( Exceptions.traceToString(e) );
+                Thread.currentThread().interrupt();
+                gpioExecutor.shutdown();
+                break;
+            }
+        }
+
     }
 
     public GpioDaemon( String[] brokerList, String clientName, String username,
@@ -89,6 +117,13 @@ public class GpioDaemon
     }
 
     public void run() {
+        log.info("Gpio daemon listener starting up...");
+        try {
+            this.connectToBroker();
+        } catch (MqttException e) {
+            log.error("Failed to connect to mqtt broker " + e.getMessage());
+            log.error(Exceptions.traceToString(e));
+        }
         while( this.isRunning ) {
             //Just wait for messages to trigger callbacks..
         }
