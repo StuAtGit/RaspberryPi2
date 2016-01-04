@@ -29,7 +29,7 @@ public class GpioDaemonTest
         String[] type = new String[mqttBrokers.size()];
         GpioDaemon gpioDaemon = new GpioDaemon( mqttBrokers.toArray(type), "Gpio Daemon Unit Test",
                 gpioDaemonTestUser, gpioDaemonTestPassword.toCharArray(), gpioDaemonTestTopic,
-                maxInvalid, mockGpio);
+                maxInvalid, 1000, mockGpio);
     }
 
     /**

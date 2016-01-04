@@ -26,60 +26,46 @@ public class GpioDaemon
     //if we get more than maxInvalid message IN A ROW, sleep & reconnect.
     private int maxInvalid;
     private int invalidRepeatCounter;
+    private long sleepTime;
     private String username;
     private char[] password;
 
     public static void main( String[] args ) throws MqttException {
         //TODO: command line arguments & test
         ArrayList<String> brokers = new ArrayList<String>();
+        brokers.add("ssl://www.shareplaylearn.com:8883");
         String[] brokerList = brokers.toArray(new String[brokers.size()]);
-        String clientName = "Default Gpio Daemon";
-        String username = "";
-        char[] password = "".toCharArray();
-        String topic = "gpio_daemon";
+        String clientName = "ClientId-Gpio-Daemon";
+        String username = SecretsService.testStormpathUsername;
+        char[] password = SecretsService.testStormpathPassword.toCharArray();
+        String topic = "lightswitch";
         int maxInvalid = 50;
         boolean mockGpio = true;
-        int pollRate = 100;
+        long sleepTime = 1000 * 3;
         ScheduledExecutorService gpioExecutor = null;
-        while( true ) {
+        //while( true ) {
             try {
-
-                //schedule the gpio listener to run periodically
                 Thread gpioThread = new Thread(new GpioDaemon(brokerList, clientName, username,
-                        password, topic, maxInvalid, mockGpio));
-                gpioExecutor = Executors.newSingleThreadScheduledExecutor();
-                gpioExecutor.scheduleAtFixedRate(gpioThread, 0, pollRate, TimeUnit.MILLISECONDS);
-
-                //start a sleeping thread we can block on
-                Thread blockingThread = new Thread(new Runnable() {
-                    public void run() {
-                        try {
-                            while( true ) {
-                                Thread.sleep(60 * 60 * 1000);
-                                log.info("Gpio Blocking thread still running.");
-                            }
-                        } catch (InterruptedException e) {
-                            log.warn("Blocking thread was interrupted: " + e.getMessage());
-                        }
-                    }
-                });
-                blockingThread.start();
-                blockingThread.join();
+                        password, topic, maxInvalid, sleepTime, mockGpio));
+                gpioThread.start();
+                gpioThread.join();
 
             } catch( InterruptedException e ) {
                 log.error("Execution of gpio daemon was interrupted: " + e.getMessage());
                 log.error( Exceptions.traceToString(e) );
                 Thread.currentThread().interrupt();
                 gpioExecutor.shutdown();
-                break;
+                //break;
             }
-        }
+        //}
 
     }
 
     public GpioDaemon( String[] brokerList, String clientName, String username,
-                       char[] password, String topic, int maxInvalid, boolean mockGpio ) throws MqttException {
+                       char[] password, String topic, int maxInvalid, long sleepTime,
+                       boolean mockGpio ) throws MqttException {
         this.gpio = new Gpio( mockGpio );
+        this.sleepTime = sleepTime;
         this.commandTranslator = new CommandTranslator( this.gpio );
         if( brokerList == null || brokerList.length < 1 ) {
             throw new IllegalArgumentException("Invalid broker list, must list at least 1 mqtt broker.");
@@ -87,6 +73,7 @@ public class GpioDaemon
         if( clientName == null || clientName.length() == 0 ) {
             throw new IllegalArgumentException("Invalid client name: " + clientName);
         }
+        log.info(clientName + " connecting to mqtt broker.");
         this.mqttClient = new MqttClient( brokerList[0], clientName, new MemoryPersistence() );
         this.brokerList = brokerList;
         this.topic = topic;
@@ -94,7 +81,6 @@ public class GpioDaemon
         this.password = password;
         this.invalidRepeatCounter = 0;
         this.maxInvalid = maxInvalid;
-        this.connectToBroker();
         this.isRunning = true;
     }
 
@@ -123,9 +109,16 @@ public class GpioDaemon
         } catch (MqttException e) {
             log.error("Failed to connect to mqtt broker " + e.getMessage());
             log.error(Exceptions.traceToString(e));
+            return;
         }
         while( this.isRunning ) {
-            //Just wait for messages to trigger callbacks..
+            try {
+                Thread.sleep( this.sleepTime );
+            } catch (InterruptedException e) {
+                log.warn("Daemon thread was interrupted:\n" + Exceptions.traceToString(e));
+                Thread.currentThread().interrupt();
+                break;
+            }
         }
         try {
             this.mqttClient.disconnect();
