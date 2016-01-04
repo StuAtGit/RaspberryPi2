@@ -91,7 +91,7 @@ public class GpioDaemon
         connectOptions.setUserName(this.username);
         connectOptions.setPassword(this.password);
         this.mqttClient.connect(connectOptions);
-        this.log.info("Connected to mqtt broker: " + this.mqttClient.getServerURI() );
+        this.log.info("Connected to mqtt broker: " + this.mqttClient.getServerURI() + " as: " + this.username );
         this.mqttClient.setCallback(this);
         this.mqttClient.subscribe(this.topic,1);
         this.log.info("Subscribed to topic: " + this.topic);
