@@ -42,7 +42,7 @@ public class MqttMessageHandler
         CommandTranslator.Result result = commandTranslator.translateMessage(message);
         if( result.type == CommandTranslator.ResultType.INVALID_COMMAND ) {
             this.log.info("Invalid command send to client: " + message + " sending: " + result.response );
-            //TODO: this will block
+            //TODO: this will block - I don't know why?
             //this.gpioDaemon.mqttClient.publish(responseTopic, result.response.getBytes(UTF_8), 1, false);
             this.invalidRepeatCounter++;
             if( this.invalidRepeatCounter > this.maxInvalid ) {

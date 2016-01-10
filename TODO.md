@@ -1,7 +1,8 @@
 ##TODO
 
-- web client to test daemon
 - Shareplaylearn test client
+    - test client publishes to us successfully - but we block on publishing to the response topic for some reason?
+      why?
 - Test Client to test daemon (while connected to broker)
 - Deploy to Raspberry Pi 2 :)
 
