@@ -23,13 +23,15 @@ public class GpioDaemonTest
         ArrayList<String> mqttBrokers = new ArrayList<String>();
         String gpioDaemonTestUser = "";
         String gpioDaemonTestPassword = "";
-        String gpioDaemonTestTopic = "";
+        String gpioDaemonTestRequestTopic = "";
+        String gpioDaemonTestResponseTopic = "";
         int maxInvalid = 1;
         boolean mockGpio = true;
         String[] type = new String[mqttBrokers.size()];
         GpioDaemon gpioDaemon = new GpioDaemon( mqttBrokers.toArray(type), "Gpio Daemon Unit Test",
-                gpioDaemonTestUser, gpioDaemonTestPassword.toCharArray(), gpioDaemonTestTopic,
-                maxInvalid, 1000, mockGpio);
+                gpioDaemonTestUser, gpioDaemonTestPassword.toCharArray(), gpioDaemonTestRequestTopic,
+                gpioDaemonTestResponseTopic,
+                maxInvalid, mockGpio);
     }
 
     /**
