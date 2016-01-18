@@ -98,7 +98,6 @@ public class GpioDaemon
 
     public void disconnect() throws MqttException {
         this.mqttClient.unsubscribe(this.requestTopic);
-        this.mqttClient.unsubscribe(this.responseTopic);
         this.mqttClient.disconnect();
     }
 
