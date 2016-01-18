@@ -64,6 +64,13 @@ public class GpioDaemon
                        String username, char[] password, String requestTopic,
                        String responseTopic, int maxInvalid,
                        boolean mockGpio ) throws MqttException {
+
+        if( requestTopic.equals(responseTopic) ) {
+            throw new IllegalArgumentException("Request topic cannot be the same as response topic");
+        }
+        if( requestClientName.equals(responseClientName) ) {
+            throw new IllegalArgumentException("Request client name cannot be the same as the response client name");
+        }
         this.gpio = new Gpio( mockGpio );
         this.commandTranslator = new CommandTranslator( this.gpio );
         if( brokerList == null || brokerList.length < 1 ) {
