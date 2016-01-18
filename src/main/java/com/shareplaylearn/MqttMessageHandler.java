@@ -19,8 +19,9 @@ public class MqttMessageHandler
     private Gpio gpio;
     private CommandTranslator commandTranslator;
     private Logger log;
+    private MqttClient responseClient;
 
-    public MqttMessageHandler( GpioDaemon gpioDaemon, String responseTopic,
+    public MqttMessageHandler( GpioDaemon gpioDaemon, MqttClient responseClient, String responseTopic,
                                int maxInvalid, Gpio gpio ) {
         this.gpioDaemon = gpioDaemon;
         this.responseTopic = responseTopic;
@@ -29,6 +30,7 @@ public class MqttMessageHandler
         this.gpio = gpio;
         this.commandTranslator = new CommandTranslator(gpio);
         this.log = LoggerFactory.getLogger( MqttMessageHandler.class );
+        this.responseClient = responseClient;
     }
 
     public void connectionLost(Throwable throwable) {
@@ -42,8 +44,7 @@ public class MqttMessageHandler
         CommandTranslator.Result result = commandTranslator.translateMessage(message);
         if( result.type == CommandTranslator.ResultType.INVALID_COMMAND ) {
             this.log.info("Invalid command send to client: " + message + " sending: " + result.response );
-            //TODO: this will block - I don't know why?
-            this.gpioDaemon.mqttClient.publish(responseTopic, result.response.getBytes(UTF_8), 1, false);
+            this.responseClient.publish(responseTopic, result.response.getBytes(UTF_8), 1, false);
             this.invalidRepeatCounter++;
             if( this.invalidRepeatCounter > this.maxInvalid ) {
                 this.log.warn("Max invalid messages received, resetting connection.");
@@ -55,24 +56,24 @@ public class MqttMessageHandler
             if( result.setPinHigh ) {
                 this.gpio.setHigh(result.pin);
                 String response = "Set pin: " + result.pin.toString() + " to high.";
-                //this.gpioDaemon.mqttClient.publish(responseTopic, response.getBytes(UTF_8), 1, false);
+                this.responseClient.publish(responseTopic, response.getBytes(UTF_8), 1, false);
                 this.invalidRepeatCounter = 0;
                 return;
             } else {
                 this.gpio.setLow(result.pin);
                 String response = "Set pin: " + result.pin.toString() + " to low.";
-                //this.gpioDaemon.mqttClient.publish(responseTopic, response.getBytes(UTF_8), 1, false);
+                this.responseClient.publish(responseTopic, response.getBytes(UTF_8), 1, false);
                 this.invalidRepeatCounter = 0;
                 return;
             }
         } else if( result.type == CommandTranslator.ResultType.DAEMON_COMMAND ) {
             //Reconnect, Shutdown, etc (Restart would be kind of cool, but we'll see)
             if( result.reconnect ) {
-                //this.reconnect(result.millisecondsBeforeReconnect);
+                this.gpioDaemon.reconnect(result.millisecondsBeforeReconnect);
                 this.invalidRepeatCounter = 0;
             }
         }
-        //this.gpioDaemon.mqttClient.publish(responseTopic, "Unknown issue processing command".getBytes(UTF_8), 1, false);
+        this.responseClient.publish(responseTopic, "Unknown issue processing command".getBytes(UTF_8), 1, false);
     }
 
     public void deliveryComplete(IMqttDeliveryToken iMqttDeliveryToken) {

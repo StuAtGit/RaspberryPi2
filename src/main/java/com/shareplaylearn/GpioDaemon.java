@@ -15,6 +15,7 @@ public class GpioDaemon
     private Gpio gpio;
     private CommandTranslator commandTranslator;
     public MqttClient mqttClient;
+    public MqttClient responseClient;
     public boolean isRunning;
     private String requestTopic;
     private String responseTopic;
@@ -30,7 +31,8 @@ public class GpioDaemon
         ArrayList<String> brokers = new ArrayList<String>();
         brokers.add("ssl://www.shareplaylearn.com:8883");
         String[] brokerList = brokers.toArray(new String[brokers.size()]);
-        String clientName = "ClientId-Gpio-Daemon";
+        String requestClientName = "ClientId-Gpio-Daemon";
+        String responseClientName = requestClientName + "-ResponseClient";
         String username = SecretsService.testStormpathUsername;
         char[] password = SecretsService.testStormpathPassword.toCharArray();
         String requestTopic = "lightswitch";
@@ -39,8 +41,8 @@ public class GpioDaemon
         boolean mockGpio = true;
         long sleepTime = 1000 * 1;
         log.info("Gpio daemon listener starting up...");
-        GpioDaemon gpioDaemon = new GpioDaemon( brokerList, clientName, username, password,
-                requestTopic, responseTopic, maxInvalid, mockGpio );
+        GpioDaemon gpioDaemon = new GpioDaemon( brokerList, requestClientName, responseClientName,
+                username, password, requestTopic, responseTopic, maxInvalid, mockGpio );
         try {
             gpioDaemon.connectToBroker();
         } catch (MqttException e) {
@@ -58,19 +60,21 @@ public class GpioDaemon
         }
     }
 
-    public GpioDaemon( String[] brokerList, String clientName, String username,
-                       char[] password, String requestTopic, String responseTopic, int maxInvalid,
+    public GpioDaemon( String[] brokerList, String requestClientName, String responseClientName,
+                       String username, char[] password, String requestTopic,
+                       String responseTopic, int maxInvalid,
                        boolean mockGpio ) throws MqttException {
         this.gpio = new Gpio( mockGpio );
         this.commandTranslator = new CommandTranslator( this.gpio );
         if( brokerList == null || brokerList.length < 1 ) {
             throw new IllegalArgumentException("Invalid broker list, must list at least 1 mqtt broker.");
         }
-        if( clientName == null || clientName.length() == 0 ) {
-            throw new IllegalArgumentException("Invalid client name: " + clientName);
+        if( requestClientName == null || requestClientName.length() == 0 ) {
+            throw new IllegalArgumentException("Invalid client name: " + requestClientName);
         }
-        log.info(clientName + " connecting to mqtt broker.");
-        this.mqttClient = new MqttClient( brokerList[0], clientName, new MemoryPersistence() );
+        log.info(requestClientName + " connecting to mqtt broker.");
+        this.mqttClient = new MqttClient( brokerList[0], requestClientName, new MemoryPersistence() );
+        this.responseClient = new MqttClient( brokerList[0], responseClientName, new MemoryPersistence() );
         this.brokerList = brokerList;
         this.requestTopic = requestTopic;
         this.responseTopic = responseTopic;
@@ -89,8 +93,9 @@ public class GpioDaemon
         connectOptions.setKeepAliveInterval(5);
         connectOptions.setConnectionTimeout(600);
         this.mqttClient.connect(connectOptions);
+        this.responseClient.connect(connectOptions);
         this.log.info("Connected to mqtt broker: " + this.mqttClient.getServerURI() + " as: " + this.username );
-        this.mqttClient.setCallback( new MqttMessageHandler(this, this.responseTopic, this.maxInvalid, this.gpio) );
+        this.mqttClient.setCallback( new MqttMessageHandler(this, this.responseClient, this.responseTopic, this.maxInvalid, this.gpio) );
         this.log.info("Subscribing to requestTopic: " + this.requestTopic);
         this.mqttClient.subscribe(this.requestTopic,1);
         this.log.info("Subscribed to requestTopic: " + this.requestTopic);
