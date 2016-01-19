@@ -45,7 +45,12 @@ public class GpioDaemonTest
         MqttClient mqttResponseClient = new MqttClient( mqttBrokers.toArray(this.brokerListType)[0], "UnitTestResponseClient" );
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
         mqttConnectOptions.setUserName("stu26code");
-        mqttConnectOptions.setPassword("$Switchm30n!".toCharArray());
+
+        /**
+         * TODO: update this, already rotated it, prolly need a more scalable system?.
+         * Stored in secrets under TestStormpathClientId TestStormpathClientSecrets
+         */
+        mqttConnectOptions.setPassword("".toCharArray());
         mqttConnectOptions.setCleanSession(true);
         mqttClient.connect(mqttConnectOptions);
 
