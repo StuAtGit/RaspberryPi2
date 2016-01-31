@@ -23,8 +23,8 @@ public class GpioDaemonTest
 
     public GpioDaemonTest() throws MqttException {
 
-        this.gpioDaemonTestUser = SecretsService.testStormpathUsername;
-        this.gpioDaemonTestPassword = SecretsService.testStormpathPassword;
+        this.gpioDaemonTestUser = SecretsService.testDaemonUsername;
+        this.gpioDaemonTestPassword = SecretsService.testDaemonPassword;
         this.gpioDaemonTestRequestTopic = "lightswitch";
         this.gpioDaemonTestResponseTopic = "lightswitchResponse";
         mqttBrokers.add("ssl://www.shareplaylearn.com:8883");
@@ -44,13 +44,9 @@ public class GpioDaemonTest
         MqttClient mqttClient = new MqttClient( mqttBrokers.toArray(this.brokerListType)[0], "UnitTestClient" );
         MqttClient mqttResponseClient = new MqttClient( mqttBrokers.toArray(this.brokerListType)[0], "UnitTestResponseClient" );
         MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
-        mqttConnectOptions.setUserName("stu26code");
 
-        /**
-         * TODO: update this, already rotated it, prolly need a more scalable system?.
-         * Stored in secrets under TestStormpathClientId TestStormpathClientSecrets
-         */
-        mqttConnectOptions.setPassword("".toCharArray());
+        mqttConnectOptions.setUserName(SecretsService.testClientId);
+        mqttConnectOptions.setPassword(SecretsService.testClientSecret.toCharArray());
         mqttConnectOptions.setCleanSession(true);
         mqttClient.connect(mqttConnectOptions);
 
@@ -67,7 +63,5 @@ public class GpioDaemonTest
         Thread.sleep(1000);
         gpioDaemon.disconnect();
         System.out.println("Test message published.");
-
-        //mqttClient.disconnect();
     }
 }

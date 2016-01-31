@@ -33,8 +33,8 @@ public class GpioDaemon
         String[] brokerList = brokers.toArray(new String[brokers.size()]);
         String requestClientName = "ClientId-Gpio-Daemon";
         String responseClientName = requestClientName + "-ResponseClient";
-        String username = SecretsService.testStormpathUsername;
-        char[] password = SecretsService.testStormpathPassword.toCharArray();
+        String username = SecretsService.testDaemonUsername;
+        char[] password = SecretsService.testDaemonPassword.toCharArray();
         String requestTopic = "lightswitch";
         String responseTopic = "lightswitchResponse";
         int maxInvalid = 50;

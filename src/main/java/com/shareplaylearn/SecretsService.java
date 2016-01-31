@@ -16,16 +16,21 @@ public class SecretsService {
     public static String amazonClientSecret;
     public static String testOauthUsername;
     public static String testOauthPassword;
-    public static String testStormpathUsername;
-    public static String testStormpathPassword;
+    public static String testDaemonUsername;
+    public static String testDaemonPassword;
+    public static String testClientId;
+    public static String testClientSecret;
+
     private static final String GOOGLE_ID_KEY = "GoogleId";
     private static final String GOOGLE_SECRET_KEY = "GoogleSecret";
     private static final String AMAZON_ID_KEY = "AmazonId";
     private static final String AMAZON_SECRET = "AmazonSecret";
     private static final String TEST_OAUTH_USER_KEY = "TestOauthUser";
     private static final String TEST_OAUTH_PASSWORD_KEY = "TestOauthPassword";
-    private static final String TEST_STORMPATH_USER_KEY = "TestStormpathId";
-    private static final String TEST_STORMPATH_PASSWORD = "TestStormpathSecret";
+    private static final String TEST_DAEMON_USER_KEY = "TestStormpathId";
+    private static final String TEST_DAEMON_PASSWORD_KEY = "TestStormpathSecret";
+    private static final String TEST_CLIENT_ID_KEY = "TestStormpathClientId";
+    private static final String TEST_CLIENT_SECRET_KEY = "TestStormpathClientSecret";
 
     static {
         java.nio.file.Path secretsFile = FileSystems.getDefault().getPath("/etc/shareplaylearn.secrets");
@@ -50,11 +55,17 @@ public class SecretsService {
                 else if(line.startsWith(TEST_OAUTH_PASSWORD_KEY)){
                     testOauthPassword = getConfigValue(line);
                 }
-                else if(line.startsWith(TEST_STORMPATH_USER_KEY)){
-                    testStormpathUsername = getConfigValue(line);
+                else if(line.startsWith(TEST_DAEMON_USER_KEY)){
+                    testDaemonUsername = getConfigValue(line);
                 }
-                else if(line.startsWith(TEST_STORMPATH_PASSWORD)){
-                    testStormpathPassword = getConfigValue(line);
+                else if(line.startsWith(TEST_DAEMON_PASSWORD_KEY)){
+                    testDaemonPassword = getConfigValue(line);
+                }
+                else if(line.startsWith(TEST_CLIENT_ID_KEY)){
+                    testClientId = getConfigValue(line);
+                }
+                else if(line.startsWith(TEST_CLIENT_SECRET_KEY)){
+                    testClientSecret = getConfigValue(line);
                 }
 
             }
